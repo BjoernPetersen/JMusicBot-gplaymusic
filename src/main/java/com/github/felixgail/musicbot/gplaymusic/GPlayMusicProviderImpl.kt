@@ -62,6 +62,7 @@ class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope {
     private lateinit var token: Config.StringEntry
     private lateinit var streamQuality: Config.SerializedEntry<StreamQuality>
     private lateinit var cacheTime: Config.SerializedEntry<Int>
+    private lateinit var showVideos: Config.BooleanEntry
     @Inject
     private lateinit var fileStorage: FileStorage
     private var fileDir: File? = null
@@ -116,7 +117,13 @@ class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope {
             60
         )
 
-        return listOf(username, streamQuality, cacheTime)
+        showVideos = config.BooleanEntry(
+            "Show YouTube videos",
+            "Use YouTube video, if available",
+            false
+        )
+
+        return listOf(username, streamQuality, cacheTime, showVideos)
     }
 
     override fun createSecretEntries(secrets: Config): List<Config.Entry<*>> {
@@ -247,7 +254,7 @@ class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope {
             try {
                 val track = api.trackApi.getTrack(song.id)
                 val video = track.video
-                if (youtubePlaybackFactory != null && video.isPresent) {
+                if (showVideos.get() && youtubePlaybackFactory != null && video.isPresent) {
                     youtubePlaybackFactory!!.load(video.get().id)
                 } else {
                     val path = Paths.get(songDir, song.id + ".mp3")
