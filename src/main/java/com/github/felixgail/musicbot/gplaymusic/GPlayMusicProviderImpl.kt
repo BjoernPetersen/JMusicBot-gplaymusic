@@ -6,6 +6,7 @@ import com.github.felixgail.gplaymusic.model.enums.StreamQuality
 import com.github.felixgail.gplaymusic.util.TokenProvider
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.LoadingCache
+import com.google.inject.Inject
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -32,6 +33,8 @@ import net.bjoernpetersen.musicbot.spi.plugin.management.InitStateWriter
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.Mp3PlaybackFactory
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.UnsupportedAudioFileException
 import net.bjoernpetersen.musicbot.spi.util.FileStorage
+import net.bjoernpetersen.musicbot.youtube.playback.YouTubePlaybackFactory
+import net.bjoernpetersen.musicbot.youtube.playback.YouTubeResource
 import svarzee.gps.gpsoauth.AuthToken
 import svarzee.gps.gpsoauth.Gpsoauth
 import java.io.File
@@ -40,7 +43,6 @@ import java.net.HttpURLConnection
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.max
 import kotlin.math.min
@@ -67,6 +69,9 @@ class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope {
     private lateinit var playbackFactory: Mp3PlaybackFactory
     override lateinit var api: GPlayMusic
         private set
+
+    @Inject(optional = true)
+    private var youtubePlaybackFactory: YouTubePlaybackFactory? = null
 
     private lateinit var cachedSongs: LoadingCache<String, Deferred<Song>>
 
@@ -241,13 +246,18 @@ class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope {
             val songDir = fileDir!!.path
             try {
                 val track = api.trackApi.getTrack(song.id)
-                val path = Paths.get(songDir, song.id + ".mp3")
-                val tmpPath = Paths.get(songDir, song.id + ".mp3.tmp")
-                if (!Files.exists(path)) {
-                    track.download(streamQuality.get(), tmpPath)
-                    Files.move(tmpPath, path)
+                val video = track.video
+                if (youtubePlaybackFactory != null && video.isPresent) {
+                    youtubePlaybackFactory!!.load(video.get().id)
+                } else {
+                    val path = Paths.get(songDir, song.id + ".mp3")
+                    val tmpPath = Paths.get(songDir, song.id + ".mp3.tmp")
+                    if (!Files.exists(path)) {
+                        track.download(streamQuality.get(), tmpPath)
+                        Files.move(tmpPath, path)
+                    }
+                    FileResource(path.toFile())
                 }
-                FileResource(path.toFile())
             } catch (e: IOException) {
                 throw SongLoadingException(e)
             }
@@ -256,11 +266,14 @@ class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope {
 
     @Throws(IOException::class)
     override suspend fun supplyPlayback(song: Song, resource: Resource): Playback {
-        val fileResource = resource as FileResource
-        try {
-            return playbackFactory.createPlayback(fileResource.file)
-        } catch (e: UnsupportedAudioFileException) {
-            throw IOException(e)
+        return when (resource) {
+            is FileResource -> try {
+                return playbackFactory.createPlayback(resource.file)
+            } catch (e: UnsupportedAudioFileException) {
+                throw IOException(e)
+            }
+            is YouTubeResource -> youtubePlaybackFactory!!.createPlayback(resource)
+            else -> throw IllegalArgumentException()
         }
     }
 
