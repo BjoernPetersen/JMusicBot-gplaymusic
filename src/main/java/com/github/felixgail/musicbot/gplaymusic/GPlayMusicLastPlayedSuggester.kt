@@ -1,11 +1,13 @@
 package com.github.felixgail.musicbot.gplaymusic
 
 import com.github.felixgail.gplaymusic.model.Station
+import com.github.felixgail.gplaymusic.model.Track
 import com.github.felixgail.gplaymusic.model.snippets.StationSeed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withContext
+import mu.KotlinLogging
 import net.bjoernpetersen.musicbot.api.config.Config
 import net.bjoernpetersen.musicbot.api.config.ExperimentalConfigDsl
 import net.bjoernpetersen.musicbot.api.config.TextBox
@@ -13,16 +15,27 @@ import net.bjoernpetersen.musicbot.api.config.string
 import net.bjoernpetersen.musicbot.api.player.QueueEntry
 import net.bjoernpetersen.musicbot.api.player.Song
 import net.bjoernpetersen.musicbot.api.player.SongEntry
+import net.bjoernpetersen.musicbot.api.plugin.IdBase
 import net.bjoernpetersen.musicbot.api.plugin.PluginScope
 import net.bjoernpetersen.musicbot.spi.plugin.InitializationException
 import net.bjoernpetersen.musicbot.spi.plugin.NoSuchSongException
+import net.bjoernpetersen.musicbot.spi.plugin.Suggester
 import net.bjoernpetersen.musicbot.spi.plugin.management.InitStateWriter
+import net.bjoernpetersen.musicbot.spi.plugin.predefined.gplaymusic.GPlayMusicProvider
 import java.io.IOException
 import java.util.LinkedList
+import javax.inject.Inject
 
 @UseExperimental(ExperimentalConfigDsl::class)
-class GPlayMusicSuggesterDefault : GPlayMusicSuggester(),
+@IdBase("Station based on last played song")
+class GPlayMusicLastPlayedSuggester : Suggester,
     CoroutineScope by PluginScope(Dispatchers.IO) {
+    private val logger = KotlinLogging.logger { }
+
+    @Inject
+    private lateinit var provider: GPlayMusicProvider
+    @Inject
+    private lateinit var api: GPlayMusicApi
 
     private var radioStation: Station? = null
     private var lastSuggested: Song? = null
@@ -33,13 +46,24 @@ class GPlayMusicSuggesterDefault : GPlayMusicSuggester(),
     private var baseSong: Song? = null
 
     override val name: String
-        get() = "GPlayMusic DefaultSuggester"
+        get() = "Default"
 
     override val description: String
-        get() = "Suggest songs from a GPlayMusic station based on the last played song."
+        get() = "Suggest songs from a station based on the last manually played song."
 
     override val subject: String
         get() = baseSong?.title?.let { "Based on $it" } ?: name
+
+    private fun songsToTracks(songs: Collection<Song>): List<Track> {
+        return songs.mapNotNull { (id) ->
+            try {
+                api.trackApi.getTrack(id)
+            } catch (e: IOException) {
+                logger.warn("Error while fetching track.", e)
+                null
+            }
+        }
+    }
 
     @Throws(InitializationException::class)
     override suspend fun initialize(initStateWriter: InitStateWriter) {
@@ -76,7 +100,9 @@ class GPlayMusicSuggesterDefault : GPlayMusicSuggester(),
                 try {
                     radioStation!!
                         .getTracks(songsToTracks(recentlyPlayedSongs), true, true)
-                        .forEach { track -> suggestions.add(provider.getSongFromTrack(track)) }
+                        .forEach { track ->
+                            suggestions.add(provider.getSongFromTrack(track, api.isYoutubeEnabled()))
+                        }
                 } catch (e: IOException) {
                     logger.error("IOException while fetching for station songs", e)
                 }
@@ -141,7 +167,6 @@ class GPlayMusicSuggesterDefault : GPlayMusicSuggester(),
     @Throws(IOException::class)
     private fun createStation(song: Song) {
         if (lastSuggested == null || song.id != lastSuggested!!.id) {
-            val api = provider.api
             val station = api.stationApi
                 .create(
                     StationSeed(
