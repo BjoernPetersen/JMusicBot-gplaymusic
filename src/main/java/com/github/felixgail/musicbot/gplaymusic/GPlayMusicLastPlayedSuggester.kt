@@ -9,15 +9,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import net.bjoernpetersen.musicbot.api.config.Config
-import net.bjoernpetersen.musicbot.api.config.ExperimentalConfigDsl
 import net.bjoernpetersen.musicbot.api.config.TextBox
 import net.bjoernpetersen.musicbot.api.config.string
 import net.bjoernpetersen.musicbot.api.player.QueueEntry
 import net.bjoernpetersen.musicbot.api.player.Song
 import net.bjoernpetersen.musicbot.api.player.SongEntry
 import net.bjoernpetersen.musicbot.api.plugin.IdBase
+import net.bjoernpetersen.musicbot.api.plugin.InitializationException
 import net.bjoernpetersen.musicbot.api.plugin.PluginScope
-import net.bjoernpetersen.musicbot.spi.plugin.InitializationException
 import net.bjoernpetersen.musicbot.spi.plugin.NoSuchSongException
 import net.bjoernpetersen.musicbot.spi.plugin.Suggester
 import net.bjoernpetersen.musicbot.spi.plugin.management.InitStateWriter
@@ -26,7 +25,6 @@ import java.io.IOException
 import java.util.LinkedList
 import javax.inject.Inject
 
-@UseExperimental(ExperimentalConfigDsl::class)
 @IdBase("Station based on last played song")
 class GPlayMusicLastPlayedSuggester : Suggester,
     CoroutineScope by PluginScope(Dispatchers.IO) {
@@ -101,7 +99,12 @@ class GPlayMusicLastPlayedSuggester : Suggester,
                     radioStation!!
                         .getTracks(songsToTracks(recentlyPlayedSongs), true, true)
                         .forEach { track ->
-                            suggestions.add(provider.getSongFromTrack(track, api.isYoutubeEnabled()))
+                            suggestions.add(
+                                provider.getSongFromTrack(
+                                    track,
+                                    api.isYoutubeEnabled()
+                                )
+                            )
                         }
                 } catch (e: IOException) {
                     logger.error("IOException while fetching for station songs", e)

@@ -8,20 +8,17 @@ import com.google.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mu.KotlinLogging
 import net.bjoernpetersen.musicbot.api.config.Config
-import net.bjoernpetersen.musicbot.api.config.ExperimentalConfigDsl
 import net.bjoernpetersen.musicbot.api.config.boolean
 import net.bjoernpetersen.musicbot.api.plugin.Base
+import net.bjoernpetersen.musicbot.api.plugin.InitializationException
 import net.bjoernpetersen.musicbot.api.plugin.PluginScope
 import net.bjoernpetersen.musicbot.spi.plugin.GenericPlugin
-import net.bjoernpetersen.musicbot.spi.plugin.InitializationException
 import net.bjoernpetersen.musicbot.spi.plugin.management.InitStateWriter
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.gplaymusic.GPlayMusicAuthenticator
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.youtube.YouTubeProvider
 import com.github.felixgail.gplaymusic.exceptions.InitializationException as GPlayMusicInitializationException
 
-@UseExperimental(ExperimentalConfigDsl::class)
 @Base
 class GPlayMusicApi : GenericPlugin, CoroutineScope by PluginScope(Dispatchers.IO) {
     override val name: String = "gplaymusic"

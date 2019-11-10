@@ -5,14 +5,17 @@ import mu.KotlinLogging
 import net.bjoernpetersen.musicbot.api.player.Song
 import net.bjoernpetersen.musicbot.api.player.song
 import net.bjoernpetersen.musicbot.api.plugin.NamedPlugin
-import net.bjoernpetersen.musicbot.spi.plugin.idName
+import net.bjoernpetersen.musicbot.api.plugin.pluginId
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.gplaymusic.GPlayMusicProvider
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.youtube.YouTubeProvider
 import java.time.Duration
 
 private val logger = KotlinLogging.logger { }
 
-private val namedYouTube = NamedPlugin(YouTubeProvider::class, YouTubeProvider::class.idName)
+private val namedYouTube = NamedPlugin(
+    YouTubeProvider::class,
+    YouTubeProvider::class.pluginId.displayName
+)
 
 internal fun GPlayMusicProvider.getSongFromTrack(track: Track, delegateYouTube: Boolean): Song {
     var albumArtUrl: String? = null

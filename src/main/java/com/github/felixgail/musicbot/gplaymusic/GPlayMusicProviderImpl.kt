@@ -15,10 +15,9 @@ import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import net.bjoernpetersen.musicbot.api.cache.AsyncLoader
 import net.bjoernpetersen.musicbot.api.config.Config
-import net.bjoernpetersen.musicbot.api.config.ExperimentalConfigDsl
+import net.bjoernpetersen.musicbot.api.config.DeserializationException
 import net.bjoernpetersen.musicbot.api.config.IntSerializer
 import net.bjoernpetersen.musicbot.api.config.NumberBox
-import net.bjoernpetersen.musicbot.api.config.SerializationException
 import net.bjoernpetersen.musicbot.api.config.choiceBox
 import net.bjoernpetersen.musicbot.api.config.serialization
 import net.bjoernpetersen.musicbot.api.config.serialized
@@ -27,7 +26,7 @@ import net.bjoernpetersen.musicbot.api.loader.SongLoadingException
 import net.bjoernpetersen.musicbot.api.player.Song
 import net.bjoernpetersen.musicbot.api.plugin.PluginScope
 import net.bjoernpetersen.musicbot.spi.loader.Resource
-import net.bjoernpetersen.musicbot.spi.plugin.InitializationException
+import net.bjoernpetersen.musicbot.api.plugin.InitializationException
 import net.bjoernpetersen.musicbot.spi.plugin.NoSuchSongException
 import net.bjoernpetersen.musicbot.spi.plugin.Playback
 import net.bjoernpetersen.musicbot.spi.plugin.management.InitStateWriter
@@ -45,7 +44,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 
-@UseExperimental(ExperimentalConfigDsl::class)
 class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope by PluginScope(Dispatchers.IO) {
 
     private val logger = KotlinLogging.logger { }
@@ -83,7 +81,7 @@ class GPlayMusicProviderImpl : GPlayMusicProvider, CoroutineScope by PluginScope
                     try {
                         StreamQuality.valueOf(it)
                     } catch (e: IllegalArgumentException) {
-                        throw SerializationException()
+                        throw DeserializationException()
                     }
                 }
             }

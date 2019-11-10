@@ -5,14 +5,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import net.bjoernpetersen.musicbot.api.config.Config
-import net.bjoernpetersen.musicbot.api.config.ExperimentalConfigDsl
 import net.bjoernpetersen.musicbot.api.config.NonnullConfigChecker
 import net.bjoernpetersen.musicbot.api.config.PasswordBox
 import net.bjoernpetersen.musicbot.api.config.TextBox
 import net.bjoernpetersen.musicbot.api.config.serialization
 import net.bjoernpetersen.musicbot.api.config.serialized
 import net.bjoernpetersen.musicbot.api.config.string
-import net.bjoernpetersen.musicbot.spi.plugin.InitializationException
+import net.bjoernpetersen.musicbot.api.plugin.InitializationException
 import net.bjoernpetersen.musicbot.spi.plugin.management.InitStateWriter
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.TokenRefreshException
 import net.bjoernpetersen.musicbot.spi.plugin.predefined.gplaymusic.GPlayMusicAuthenticator
@@ -21,7 +20,6 @@ import svarzee.gps.gpsoauth.Gpsoauth
 import java.io.IOException
 import java.time.Instant
 
-@UseExperimental(ExperimentalConfigDsl::class)
 class GPlayMusicAuthenticatorImpl : GPlayMusicAuthenticator {
     override val name: String = "gpsoauth"
     override val description: String = "Uses Google Play Services OAuth"
