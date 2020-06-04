@@ -1,4 +1,7 @@
 # MusicBot-gplaymusic
+
+NOTE: This plugin is now part of https://github.com/BjoernPetersen/MusicBot-plugins
+
 A GooglePlayMusic provider for the MusicBot (https://github.com/BjoernPetersen/MusicBot)
 
 #### Requirements
